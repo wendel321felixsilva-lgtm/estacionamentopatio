@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
 <meta charset="UTF-8">
-<title>Estacionamento Honda PRO</title>
+<title>Estacionamento Honda PRO ONLINE</title>
 
 <style>
 
@@ -130,8 +131,6 @@ button{
 
     <div class="painel">
 
-        <!-- LOGIN -->
-
         <div class="loginBox">
 
             <h3>🔐 Área Restrita</h3>
@@ -161,8 +160,6 @@ button{
 
         </div>
 
-        <!-- DASHBOARD -->
-
         <div class="dashboard">
 
             <h4>📊 Dashboard</h4>
@@ -184,8 +181,6 @@ button{
             </div>
 
         </div>
-
-        <!-- PAINEL BLOQUEÁVEL -->
 
         <div id="painelEdicao" class="locked">
 
@@ -301,10 +296,6 @@ button{
    LOGIN
 ========================= */
 
-/*
-ALTERE AQUI
-*/
-
 const LOGIN = "Wendel";
 const SENHA = "452159";
 
@@ -331,7 +322,10 @@ function fazerLogin(){
 
         atualizarBotoes();
 
-        salvarLogin();
+        localStorage.setItem(
+            "loginEstac",
+            "true"
+        );
 
         alert("Login realizado");
 
@@ -345,9 +339,7 @@ function logout(){
 
     modoEdicao = false;
 
-    document
-    .getElementById("painelEdicao")
-    .classList.add("locked");
+    painelEdicao.classList.add("locked");
 
     statusLogin.innerHTML =
         "🔒 Modo visualização ativo";
@@ -355,14 +347,6 @@ function logout(){
     atualizarBotoes();
 
     localStorage.removeItem("loginEstac");
-}
-
-function salvarLogin(){
-
-    localStorage.setItem(
-        "loginEstac",
-        "true"
-    );
 }
 
 function carregarLogin(){
@@ -389,8 +373,11 @@ let scale = 1;
 let posX = 0;
 let posY = 0;
 
-let map = document.getElementById("map");
-let wrap = document.getElementById("mapWrapper");
+let map =
+    document.getElementById("map");
+
+let wrap =
+    document.getElementById("mapWrapper");
 
 function updateTransform(){
 
@@ -423,6 +410,7 @@ wrap.onwheel = e => {
 ========================= */
 
 let isPanning = false;
+
 let startX;
 let startY;
 
@@ -521,7 +509,7 @@ function atualizarBotoes(){
 }
 
 /* =========================
-   ÁREA
+   ÁREAS
 ========================= */
 
 function criarAreaBase(nome){
@@ -611,8 +599,6 @@ function criarVaga(a, x, y){
     let offsetX = 0;
     let offsetY = 0;
 
-    /* DRAG */
-
     v.addEventListener("mousedown", e => {
 
         if(!modoEdicao)
@@ -671,8 +657,6 @@ function criarVaga(a, x, y){
             salvar();
         }
     });
-
-    /* CLICK */
 
     v.addEventListener("click", e => {
 
@@ -833,15 +817,71 @@ function buscar(){
     });
 }
 
+carregarLogin();
+
+dash();
+
+atualizarBotoes();
+
+</script>
+
+<!-- =========================
+     FIREBASE ONLINE
+========================= -->
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+    getDatabase,
+    ref,
+    set,
+    onValue
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+
+    apiKey:
+    "AIzaSyDVrSDy2Ni92ksYc9Yx9u_8N1cCDH_0ku8",
+
+    authDomain:
+    "gestaodepatio-90ed5.firebaseapp.com",
+
+    databaseURL:
+    "https://gestaodepatio-90ed5-default-rtdb.firebaseio.com",
+
+    projectId:
+    "gestaodepatio-90ed5",
+
+    storageBucket:
+    "gestaodepatio-90ed5.appspot.com",
+
+    messagingSenderId:
+    "1004350181635",
+
+    appId:
+    "1:1004350181635:web:fd98b8609ec3ddad149936"
+};
+
+const app =
+    initializeApp(firebaseConfig);
+
+const db =
+    getDatabase(app);
+
 /* =========================
-   SALVAR
+   SALVAR ONLINE
 ========================= */
 
-function salvar(){
+window.salvar = async function(){
 
     let data = [];
 
-    document.querySelectorAll(".area")
+    document
+    .querySelectorAll(".area")
     .forEach(a => {
 
         let vagas = [];
@@ -851,12 +891,13 @@ function salvar(){
 
             vagas.push({
 
-                x:v.style.left,
-                y:v.style.top,
+                x: v.style.left,
 
-                html:v.innerHTML,
+                y: v.style.top,
 
-                rot:v.dataset.rot
+                html: v.innerHTML,
+
+                rot: v.dataset.rot
             });
         });
 
@@ -869,66 +910,87 @@ function salvar(){
         });
     });
 
-    localStorage.setItem(
-        "estac",
-        JSON.stringify(data)
+    await set(
+        ref(db, "estacionamento"),
+        data
     );
 
     dash();
 }
 
 /* =========================
-   CARREGAR
+   CARREGAR ONLINE
 ========================= */
 
-function carregar(){
+function carregarOnline(){
 
-    let d =
-        JSON.parse(
-            localStorage.getItem("estac")
-        );
+    onValue(
 
-    if(!d) return;
+        ref(db, "estacionamento"),
 
-    d.forEach(a => {
+        (snapData) => {
 
-        criarAreaBase(a.nome);
+            map.innerHTML = "";
 
-        let areas =
-            document.querySelectorAll(".area");
+            if(!snapData.exists())
+                return;
 
-        let atual =
-            areas[areas.length - 1];
+            let d =
+                snapData.val();
 
-        a.vagas.forEach(v => {
+            d.forEach(a => {
 
-            let nv =
-                criarVaga(
-                    atual,
-                    parseInt(v.x),
-                    parseInt(v.y)
-                );
+                criarAreaBase(a.nome);
 
-            nv.innerHTML = v.html;
+                let areas =
+                    document.querySelectorAll(".area");
 
-            nv.dataset.rot = v.rot;
+                let atual =
+                    areas[areas.length - 1];
 
-            nv.style.transform =
-                `rotate(${v.rot}deg)`;
-        });
-    });
+                if(a.vagas){
+
+                    a.vagas.forEach(v => {
+
+                        let nv =
+                            criarVaga(
+                                atual,
+                                parseInt(v.x),
+                                parseInt(v.y)
+                            );
+
+                        nv.innerHTML =
+                            v.html;
+
+                        nv.dataset.rot =
+                            v.rot;
+
+                        nv.style.transform =
+                            `rotate(${v.rot}deg)`;
+                    });
+                }
+            });
+
+            dash();
+
+            atualizarBotoes();
+        }
+    );
 }
 
 /* =========================
-   RESET
+   RESET ONLINE
 ========================= */
 
-function reset(){
+window.reset = async function(){
 
     if(!modoEdicao)
         return alert("Acesso negado");
 
-    localStorage.removeItem("estac");
+    await set(
+        ref(db, "estacionamento"),
+        null
+    );
 
     location.reload();
 }
@@ -937,13 +999,7 @@ function reset(){
    INIT
 ========================= */
 
-carregar();
-
-carregarLogin();
-
-dash();
-
-atualizarBotoes();
+carregarOnline();
 
 </script>
 

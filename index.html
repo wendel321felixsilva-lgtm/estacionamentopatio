@@ -280,9 +280,13 @@ button{
 
         <hr>
 
+        <!-- =========================
+             BUSCA AVANÇADA
+        ========================= -->
+
         <input
             id="busca"
-            placeholder="Buscar chassi..."
+            placeholder="Buscar chassi, modelo ou versão..."
             oninput="buscar()"
         >
 
@@ -785,34 +789,68 @@ function toggleSnap(){
 }
 
 /* =========================
-   BUSCA
+   BUSCA AVANÇADA
 ========================= */
 
 function buscar(){
 
     let val =
-        busca.value.toLowerCase();
+        busca.value
+        .toLowerCase()
+        .trim();
 
     document.querySelectorAll(".vaga")
     .forEach(v => {
 
+        let textoBusca = "";
+
+        /* CHASSI */
+
         let c =
             v.querySelector(".chassi");
 
+        if(c){
+
+            textoBusca +=
+                c.innerText
+                .toLowerCase() + " ";
+        }
+
+        /* MODELO E VERSÃO */
+
+        let carro =
+            v.querySelector(".carro");
+
+        if(carro){
+
+            let modeloTexto =
+                carro.childNodes[0];
+
+            if(modeloTexto){
+
+                textoBusca +=
+                    modeloTexto.textContent
+                    .toLowerCase();
+            }
+        }
+
+        /* RESULTADO */
+
         if(
-            c &&
-            c.innerText
-            .toLowerCase()
-            .includes(val) &&
-            val !== ""
+            val !== "" &&
+            textoBusca.includes(val)
         ){
 
             v.style.outline =
                 "3px solid lime";
 
+            v.style.zIndex = "999";
+
         }else{
 
             v.style.outline = "";
+
+            v.style.zIndex = "";
         }
     });
 }
